@@ -123,29 +123,35 @@ public class GameManager : MonoBehaviour
     public void TrySlideToEmpty(int pieceIndex, Vector3 releasePos)
 {
     Vector3 target = pieces[emptyIndex].localPosition;
-
     float distance = Vector3.Distance(releasePos, target);
 
-    if (distance < 0.25f) // ← loosen this a bit for real hand movement
+    if (distance < 0.25f)
     {
-        // Perfectly snap and swap
+        // Snap to the empty
         pieces[pieceIndex].localPosition = target;
         pieces[emptyIndex].localPosition = GetOriginalPosition(pieceIndex);
 
-        // Swap in the list
+        // Swap references
         (pieces[pieceIndex], pieces[emptyIndex]) = (pieces[emptyIndex], pieces[pieceIndex]);
 
-        pieces[pieceIndex].gameObject.SetActive(false);
-        pieces[emptyIndex].gameObject.SetActive(true);
-
+        // Update empty index
         emptyIndex = pieceIndex;
+
+        // Re-enable collider to refresh hover/interaction
+        Collider col = pieces[emptyIndex].GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = false;
+            col.enabled = true;
+        }
     }
     else
     {
-        // Not close enough? Reset position
         pieces[pieceIndex].localPosition = GetOriginalPosition(pieceIndex);
     }
 }
+
+
 
     private Vector3 GetOriginalPosition(int index)
     {

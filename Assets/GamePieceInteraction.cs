@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
@@ -6,31 +5,31 @@ public class GamePieceInteraction : MonoBehaviour
 {
     private GameManager gameManager;
     private Transform handTransform;
-    private int pieceIndex;
     private bool isSliding = false;
     private Vector3 initialHandPos;
     private Vector3 initialPiecePos;
-    private Vector3 slideDir;
+
+    public int PieceIndex => int.Parse(gameObject.name);
 
     void Start()
     {
         gameManager = FindObjectOfType<GameManager>();
-        pieceIndex = int.Parse(gameObject.name);
     }
 
     void Update()
     {
         if (isSliding && handTransform != null)
         {
-            Vector3 handMovement = handTransform.localPosition - initialHandPos;
-            gameManager.MovePieceTowardEmpty(pieceIndex, handMovement, initialPiecePos, slideDir);
+            if (gameManager.CanSlide(PieceIndex, out Vector3 slideDir))
+            {
+                Vector3 handMovement = handTransform.localPosition - initialHandPos;
+                gameManager.MovePieceTowardEmpty(PieceIndex, handMovement, initialPiecePos, slideDir);
+            }
         }
     }
 
     public void OnSelectEntered(SelectEnterEventArgs args)
     {
-        if (!gameManager.CanSlide(pieceIndex, out slideDir)) return;
-
         handTransform = args.interactorObject.transform;
         isSliding = true;
         initialHandPos = handTransform.localPosition;
@@ -43,6 +42,6 @@ public class GamePieceInteraction : MonoBehaviour
 
         isSliding = false;
         handTransform = null;
-        gameManager.TrySlideToEmpty(pieceIndex, transform.localPosition);
+        gameManager.TrySlideToEmpty(PieceIndex, transform.localPosition);
     }
 }
