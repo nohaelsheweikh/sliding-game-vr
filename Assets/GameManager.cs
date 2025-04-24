@@ -92,43 +92,60 @@ public class GameManager : MonoBehaviour
 }
 
 
-    public void MovePieceTowardEmpty(int pieceIndex, Vector3 handMovement, Vector3 startPos, Vector3 slideDir)
+   public void MovePieceTowardEmpty(int pieceIndex, Vector3 handMovement, Vector3 startPos, Vector3 slideDir)
+{
+    Vector3 targetPos = pieces[emptyIndex].localPosition;
+
+    // Ensure direction alignment
+    float alignment = Vector3.Dot(slideDir.normalized, handMovement.normalized);
+    if (alignment > 0.8f)
     {
-        Vector3 targetPos = pieces[emptyIndex].localPosition;
+        // Project hand movement onto slideDir
+        float handAmount = Vector3.Dot(handMovement, slideDir.normalized);
+        float maxDistance = Vector3.Distance(startPos, targetPos);
 
-        float alignment = Vector3.Dot(slideDir.normalized, handMovement.normalized);
-        if (alignment > 0.8f)
-        {
-            float handAmount = Vector3.Dot(handMovement, slideDir);
-            float maxDistance = Vector3.Distance(startPos, targetPos);
-            float moveAmount = Mathf.Clamp(handAmount, 0, maxDistance);
+        // Clamp movement strictly between 0 and full slide length
+        float moveAmount = Mathf.Clamp(handAmount, 0, maxDistance);
 
-            pieces[pieceIndex].localPosition = startPos + slideDir.normalized * moveAmount;
-        }
+        // Calculate precise new position along one axis
+        Vector3 newPos = startPos + slideDir.normalized * moveAmount;
+
+        pieces[pieceIndex].localPosition = new Vector3(
+            Mathf.Round(newPos.x * 1000f) / 1000f,
+            Mathf.Round(newPos.y * 1000f) / 1000f,
+            Mathf.Round(newPos.z * 1000f) / 1000f
+        );
     }
+}
+
+
 
     public void TrySlideToEmpty(int pieceIndex, Vector3 releasePos)
+{
+    Vector3 target = pieces[emptyIndex].localPosition;
+
+    float distance = Vector3.Distance(releasePos, target);
+
+    if (distance < 0.25f) // ← loosen this a bit for real hand movement
     {
-        Vector3 target = pieces[emptyIndex].localPosition;
-        float distance = Vector3.Distance(releasePos, target);
+        // Perfectly snap and swap
+        pieces[pieceIndex].localPosition = target;
+        pieces[emptyIndex].localPosition = GetOriginalPosition(pieceIndex);
 
-        if (distance < 0.2f)
-        {
-            // Swap
-            (pieces[pieceIndex], pieces[emptyIndex]) = (pieces[emptyIndex], pieces[pieceIndex]);
-            (pieces[pieceIndex].localPosition, pieces[emptyIndex].localPosition) =
-                (pieces[emptyIndex].localPosition, pieces[pieceIndex].localPosition);
+        // Swap in the list
+        (pieces[pieceIndex], pieces[emptyIndex]) = (pieces[emptyIndex], pieces[pieceIndex]);
 
-            pieces[pieceIndex].gameObject.SetActive(false);
-            pieces[emptyIndex].gameObject.SetActive(true);
+        pieces[pieceIndex].gameObject.SetActive(false);
+        pieces[emptyIndex].gameObject.SetActive(true);
 
-            emptyIndex = pieceIndex;
-        }
-        else
-        {
-            pieces[pieceIndex].localPosition = GetOriginalPosition(pieceIndex);
-        }
+        emptyIndex = pieceIndex;
     }
+    else
+    {
+        // Not close enough? Reset position
+        pieces[pieceIndex].localPosition = GetOriginalPosition(pieceIndex);
+    }
+}
 
     private Vector3 GetOriginalPosition(int index)
     {
